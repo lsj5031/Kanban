@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CSV → Kanban (Offline)</title>
+<meta name="description" content="Offline CSV to Kanban board. No network. Single file." />
+<style>
+  :root{
+    /* FT-like palette */
+    --paper:#fff1e5;
+    --ink:#111;
+    --muted:#555;
+    --border:#e7dcd2;
+    --card:#ffffff;
+    --accent:#0f6c8f;
+    --accent-ink:#0a3c4f;
+    --chip:#e6f1f5;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 18px rgba(0,0,0,.05);
+    --radius:14px;
+    --dim: 0.45; /* non-matching card opacity when tags highlighted */
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#121212;
+      --ink:#f3f3f3;
+      --muted:#b9b9b9;
+      --border:#2b2b2b;
+      --card:#1b1b1b;
+      --accent:#8ccbe6;
+      --accent-ink:#c5e9f8;
+      --chip:#13232a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+      --dim: 0.35;
+    }
+  }
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font: 16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,"Helvetica Neue",Arial,"Apple Color Emoji","Segoe UI Emoji";
+    text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3{
+    font-family: ui-serif, Georgia, "Times New Roman", Times, serif;
+    letter-spacing:.2px;
+    margin:0;
+  }
+  .app{ display:flex; flex-direction:column; min-height:100%; }
+  .topbar{
+    position:sticky; top:0; z-index:1000;
+    display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;
+    padding:12px 16px;
+    background:linear-gradient(to bottom, rgba(255,241,229,.95), rgba(255,241,229,.85)), var(--paper);
+    border-bottom:1px solid var(--border);
+    backdrop-filter: blur(8px);
+  }
+  .brand{ display:flex; align-items:center; gap:.6rem; margin-right:auto; }
+  .brand h1{ font-size:1.1rem; font-weight:700 }
+  .brand .dot{ width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 2px rgba(15,108,143,.15)}
+  .hint{ color:var(--muted); font-size:.9rem }
+  .btn{
+    appearance:none; border:1px solid var(--border); background:var(--card); color:var(--ink);
+    padding:8px 12px; border-radius:999px; cursor:pointer; box-shadow: var(--shadow);
+    font-weight:600; letter-spacing:.2px; transition: transform .06s ease, background .2s ease, border-color .2s ease;
+  }
+  .btn:hover{ transform: translateY(-1px) }
+  .btn.primary{ background: var(--accent); color:white; border-color:transparent }
+  .btn.ghost{ background:transparent }
+  input[type="file"]{ display:none }
+
+  .board{
+    display:grid; gap:16px;
+    grid-template-columns: repeat(3, minmax(280px, 1fr));
+    padding:16px;
+  }
+  @media (max-width:1100px){ .board{ grid-template-columns: repeat(2, minmax(260px, 1fr));} }
+  @media (max-width:740px){ .board{ grid-template-columns: 1fr;} }
+
+  .column{
+    background: color-mix(in oklab, var(--paper) 70%, #fff 30%);
+    border:1px solid var(--border);
+    border-radius: var(--radius);
+    display:flex; flex-direction:column; min-height:260px;
+  }
+  .col-head{
+    padding:12px 14px;
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:baseline; justify-content:space-between; gap:8px;
+  }
+  .col-head h2{ font-size:1rem }
+  .count{ color:var(--muted); font-size:.85rem }
+  .cardlist{ padding:10px; display:flex; flex-direction:column; gap:10px; min-height:140px }
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px 12px;
+    box-shadow: var(--shadow);
+    cursor:grab; touch-action:none; user-select:none;
+    transition: opacity .12s ease;
+  }
+  .card.dragging{ opacity:.9; cursor:grabbing; }
+  .card.dim{ opacity: var(--dim); }
+  .title{ font-weight:700; margin-bottom:4px }
+  .meta{ display:flex; flex-wrap:wrap; gap:6px; color:var(--muted); font-size:.85rem }
+  .chip{
+    background:var(--chip); border:1px solid color-mix(in oklab, var(--accent) 40%, #0000);
+    color:var(--accent-ink);
+    padding:2px 8px; border-radius:999px; font-weight:600; letter-spacing:.2px
+  }
+
+  /* Tag chips (multi-highlight) */
+  .tagchip{
+    --tc: var(--accent); /* per-chip color is injected inline via style="--tc: ..." */
+    background: color-mix(in oklab, var(--tc) 20%, #fff 90%);
+    border: 1px solid color-mix(in oklab, var(--tc) 50%, #fff 0%);
+    color: color-mix(in oklab, var(--tc) 80%, var(--accent-ink));
+    padding:2px 8px; border-radius:999px; font-weight:700; letter-spacing:.2px;
+    display:inline-flex; align-items:center; gap:6px;
+    line-height:1.1; cursor:pointer; user-select:none;
+    outline-offset:2px;
+  }
+  .tagchip::before{
+    content:'';
+    width:8px; height:8px; border-radius:50%;
+    background: color-mix(in oklab, var(--tc) 85%, #0000);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tc) 45%, #0000);
+  }
+  .tagchip:hover{ transform: translateY(-1px); }
+  .tagchip.active{
+    background: color-mix(in oklab, var(--tc) 30%, #fff 80%);
+    border-color: color-mix(in oklab, var(--tc) 70%, #0000);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--tc) 25%, #0000);
+  }
+  @media (prefers-color-scheme: dark){
+    .tagchip{
+      background: color-mix(in oklab, var(--tc) 15%, #000 85%);
+      border-color: color-mix(in oklab, var(--tc) 45%, #0000);
+      color: color-mix(in oklab, var(--tc) 80%, #fff);
+    }
+    .tagchip.active{
+      background: color-mix(in oklab, var(--tc) 25%, #000 75%);
+      border-color: color-mix(in oklab, var(--tc) 65%, #0000);
+      box-shadow: 0 0 0 2px color-mix(in oklab, var(--tc) 25%, #0000);
+    }
+  }
+
+  .placeholder{ border:2px dashed var(--border); border-radius:12px; height:48px; opacity:.8 }
+  .drop-hint{ outline:2px dashed var(--accent); outline-offset:-6px; transition: outline-color .15s }
+  .toolbar{ display:flex; gap:8px; align-items:center }
+  .footer{ margin-top:auto; padding:16px; color:var(--muted); font-size:.9rem; text-align:center }
+  .kbd{
+    border:1px solid var(--border); background:var(--card);
+    padding:1px 6px; border-radius:6px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  .btn:focus-visible, .card:focus-visible, .tagchip:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar" role="toolbar" aria-label="Board actions">
+    <div class="brand"><span class="dot" aria-hidden="true"></span><h1>CSV → Kanban</h1><span class="hint">offline • single file</span></div>
+    <label class="btn" for="csvInput">Upload CSV</label>
+    <input id="csvInput" type="file" accept=".csv,text/csv" />
+    <button class="btn" id="downloadTemplateBtn" title="Download example CSV">Template CSV</button>
+    <button class="btn" id="exportCsvBtn">Export CSV</button>
+    <button class="btn" id="exportJsonBtn">Export JSON</button>
+    <button class="btn ghost" id="resetBtn" title="Clear local data">Reset</button>
+  </div>
+
+  <main class="board" id="board" aria-live="polite"></main>
+
+  <div class="footer">
+    Data persists locally. Click tag chips to <strong>multi-highlight</strong>. Drag cards to reorder.
+    Keyboard: <span class="kbd">Tab</span> to focus, <span class="kbd">Space/Enter</span> to toggle tag highlight.
+    Tags: separate with semicolons or quote commas in CSV.
+  </div>
+</div>
+
+<script>
+/* ========= Utilities ========= */
+const uid = (p='id') => p + Math.random().toString(36).slice(2,9);
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const by = (k) => (a,b)=> (a[k]??0) - (b[k]??0);
+
+/* ========= Storage ========= */
+const LS_KEY = 'csv2kanban.v1';
+const saveState = (state) => localStorage.setItem(LS_KEY, JSON.stringify(state));
+const loadState = () => { try { return JSON.parse(localStorage.getItem(LS_KEY)); } catch { return null; } };
+
+/* ========= CSV Parser / Serializer ========= */
+function parseCSV(text){
+  const rows=[]; let row=[]; let field=''; let inQ=false;
+  for (let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
+    if (inQ){
+      if (c === '"' && n === '"'){ field+='"'; i++; }
+      else if (c === '"'){ inQ=false; }
+      else field+=c;
+    } else {
+      if (c === '"') inQ=true;
+      else if (c === ','){ row.push(field); field=''; }
+      else if (c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if (c === '\r'){ /* swallow */ }
+      else field+=c;
+    }
+  }
+  if (field!=='' || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+function toCSV(rows){
+  return rows.map(r => r.map(v => {
+    v = v==null ? '' : String(v);
+    if (/[",\n]/.test(v)){ return '"' + v.replace(/"/g,'""') + '"'; }
+    return v;
+  }).join(',')).join('\n');
+}
+
+/* ========= Model ========= */
+const DEFAULT_COLUMNS = [
+  { id: uid('col'), name:'To Do', order:0 },
+  { id: uid('col'), name:'In Progress', order:1 },
+  { id: uid('col'), name:'Done', order:2 },
+];
+let state = loadState() || { columns: structuredClone(DEFAULT_COLUMNS), cards: [] };
+
+/* ========= Tag highlighting state ========= */
+const selectedTags = new Set();
+
+/* Color generator for tags (stable per tag) */
+function tagHue(tag){
+  let h=0; for (let i=0;i<tag.length;i++){ h = (h*31 + tag.charCodeAt(i)) >>> 0; }
+  return h % 360;
+}
+function tagStyleVars(tag){
+  const h = tagHue(tag);
+  return `--tc: hsl(${h} 70% 50%);`;
+}
+
+/* ========= Render ========= */
+const boardEl = $('#board');
+function render(){
+  boardEl.innerHTML = '';
+  state.columns.sort(by('order')).forEach(col => {
+    const section = document.createElement('section');
+    section.className = 'column';
+    section.dataset.colId = col.id;
+    section.dataset.colName = col.name;
+
+    const head = document.createElement('div');
+    head.className = 'col-head';
+    const h2 = document.createElement('h2'); h2.textContent = col.name;
+    const count = document.createElement('div'); count.className = 'count';
+    const cardsHere = state.cards.filter(c=>c.status===col.name).sort(by('order'));
+    count.textContent = cardsHere.length;
+    head.append(h2,count);
+
+    const list = document.createElement('div');
+    list.className = 'cardlist';
+    list.setAttribute('role','list');
+
+    cardsHere.forEach(card => list.appendChild(renderCard(card)));
+
+    section.append(head,list);
+    boardEl.appendChild(section);
+  });
+
+  updateTagHighlights(); // ensure visual state matches selected tags
+}
+
+function renderCard(card){
+  const el = document.createElement('article');
+  el.className = 'card';
+  el.tabIndex = 0;
+  el.setAttribute('role','listitem');
+  el.dataset.id = card.id;
+
+  const title = document.createElement('div');
+  title.className = 'title';
+  title.textContent = card.title || '(Untitled)';
+
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+
+  if (card.priority){
+    const ch=document.createElement('span');
+    ch.className='chip';
+    ch.textContent=card.priority;
+    meta.appendChild(ch);
+  }
+
+  // Multi-tag chips (clickable for highlight)
+  if (card.tags?.length){
+    for (const tag of card.tags){
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'tagchip';
+      chip.setAttribute('style', tagStyleVars(tag));
+      chip.setAttribute('aria-pressed', 'false');
+      chip.setAttribute('title', `Highlight tag: ${tag}`);
+      chip.dataset.tag = tag;
+      chip.textContent = tag;
+
+      chip.addEventListener('click', ()=> toggleTag(tag));
+      chip.addEventListener('keydown', (e)=>{
+        if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); toggleTag(tag); }
+      });
+
+      meta.appendChild(chip);
+    }
+  }
+
+  el.append(title, meta);
+  attachDnD(el);
+  return el;
+}
+
+/* ========= CSV ⇄ Model ========= */
+const TEMPLATE_ROWS = [
+  ['id','title','description','status','priority','due_date','tags'],
+  ['c-001','Set up repo','Init project','To Do','Medium','2025-10-10','setup;meta;project:init'],
+  ['c-002','Design board','Pick colours and spacing','In Progress','Low','2025-10-12','design;ui;frontend'],
+  ['c-003','Drag & drop','Smooth DnD across columns','To Do','High','2025-10-13','feature;interaction;dnd'],
+  ['c-004','Add tests','Unit and integration tests','To Do','Medium','2025-10-15','testing;qa;automation'],
+];
+function downloadTemplate(){ triggerDownload('kanban-template.csv', toCSV(TEMPLATE_ROWS)); }
+
+function importCSVText(text){
+  const rows = parseCSV(text);
+  if (!rows.length) return;
+  const headers = rows[0].map(h => h.trim());
+  const idx = (name)=> headers.indexOf(name);
+  const sIdx = idx('status');
+  if (sIdx === -1){ alert('CSV must include a "status" column.'); return; }
+
+  const seenStatus = new Set();
+  const cards=[];
+  for (let i=1;i<rows.length;i++){
+    const r = rows[i]; if (!r || r.length===0) continue;
+    const get = (h)=> { const j = idx(h); return j>=0 ? (r[j]??'').trim() : ''; };
+    const status = get('status') || 'To Do';
+    seenStatus.add(status);
+    // collect from tags + project (and friendly aliases)
+    const rawTagFields = ['tags','tag','labels','label','project','projects'];
+    const rawList = rawTagFields.map(f => get(f)).filter(Boolean);
+    const tags = rawList
+      .flatMap(s => s.split(/[,\|;]+/))           // comma, pipe, semicolon
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(t => t.replace(/^project[=:]\s*/i, 'project:')); // normalize project= -> project:
+
+    const card = {
+      id: get('id') || uid('c'),
+      title: get('title') || '',
+      description: get('description') || '',
+      status,
+      order: 1e6 + i, // temp; will normalize
+      priority: get('priority') || '',
+      dueDate: get('due_date') || '',
+      tags: tags,
+    };
+    cards.push(card);
+  }
+  const defaultNames = DEFAULT_COLUMNS.map(c=>c.name);
+  const otherStatuses = [...seenStatus].filter(s=>!defaultNames.includes(s));
+  const columns = [
+    ...DEFAULT_COLUMNS.map((c,i)=>({id:uid('col'), name:c.name, order:i})),
+    ...otherStatuses.map((name, i)=>({id:uid('col'), name, order: DEFAULT_COLUMNS.length + i}))
+  ];
+  const grouped = new Map();
+  for (const c of cards){ if (!grouped.has(c.status)) grouped.set(c.status,[]); grouped.get(c.status).push(c); }
+  for (const [status, arr] of grouped){ arr.sort((a,b)=> a.order - b.order); arr.forEach((card,idx)=> card.order = idx); }
+  state = { columns, cards };
+  saveState(state);
+  render();
+}
+
+function exportCSV(){
+  const headers = ['id','title','description','status','priority','due_date','tags'];
+  const rows = [headers];
+  const colOrder = new Map(state.columns.sort(by('order')).map((c,i)=>[c.name,i]));
+  const cardsSorted = [...state.cards].sort((a,b)=>{
+    const co = (colOrder.get(a.status)??99) - (colOrder.get(b.status)??99);
+    return co!==0 ? co : (a.order - b.order);
+  });
+  for (const c of cardsSorted){
+    rows.push([
+      c.id,
+      c.title ?? '',
+      c.description ?? '',
+      c.status ?? '',
+      c.priority ?? '',
+      c.dueDate ?? '',
+      (c.tags?.length ? c.tags.join('; ') : '')
+    ]);
+  }
+  triggerDownload('kanban-export.csv', toCSV(rows));
+}
+function exportJSON(){ triggerDownload('kanban-export.json', JSON.stringify(state, null, 2)); }
+function triggerDownload(filename, content){
+  const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+/* ========= Tag highlight logic ========= */
+function toggleTag(tag){
+  if (selectedTags.has(tag)) selectedTags.delete(tag); else selectedTags.add(tag);
+  updateTagHighlights();
+}
+function updateTagHighlights(){
+  const enabled = selectedTags.size > 0;
+  // Update chip states
+  $$('.tagchip').forEach(chip=>{
+    const t = chip.dataset.tag;
+    const on = selectedTags.has(t);
+    chip.classList.toggle('active', on);
+    chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  // Dim non-matching cards
+  $$('.card').forEach(card=>{
+    const c = state.cards.find(x=>x.id===card.dataset.id);
+    const tags = c?.tags || [];
+    const matches = tags.some(t=> selectedTags.has(t));
+    card.classList.toggle('dim', enabled && !matches);
+  });
+}
+
+/* ========= Drag & Drop (pointer-based) ========= */
+let drag = null;
+function attachDnD(cardEl){
+  cardEl.addEventListener('pointerdown', (e)=>{
+    if (e.button !== 0) return;
+    e.preventDefault();
+    startDrag(cardEl, e);
+  }, {passive:false});
+}
+function startDrag(cardEl, e){
+  const rect = cardEl.getBoundingClientRect();
+  const startX = e.clientX, startY = e.clientY;
+  drag = {
+    id: cardEl.dataset.id,
+    el: cardEl,
+    startX, startY,
+    dx: startX - rect.left,
+    dy: startY - rect.top,
+    srcList: cardEl.closest('.cardlist'),
+    placeholder: document.createElement('div'),
+    active: false
+  };
+  drag.placeholder.className = 'placeholder';
+  cardEl.setPointerCapture(e.pointerId);
+  cardEl.addEventListener('pointermove', onMove);
+  cardEl.addEventListener('pointerup', onUp);
+  cardEl.addEventListener('pointercancel', onUp);
+}
+function onMove(e){
+  if (!drag) return;
+  if (!drag.active){
+    const moved = Math.hypot(e.clientX-drag.startX, e.clientY-drag.startY);
+    if (moved < 3) return;
+    drag.active = true;
+    drag.el.classList.add('dragging');
+    drag.el.style.position='fixed';
+    drag.el.style.left = (e.clientX - drag.dx) + 'px';
+    drag.el.style.top  = (e.clientY - drag.dy) + 'px';
+    drag.el.style.width = drag.el.getBoundingClientRect().width + 'px';
+    drag.el.style.zIndex = '2000';
+    drag.el.style.pointerEvents='none';
+    drag.srcIndex = [...drag.srcList.children].indexOf(drag.el);
+    drag.srcList.insertBefore(drag.placeholder, drag.el.nextSibling);
+  } else {
+    drag.el.style.left = (e.clientX - drag.dx) + 'px';
+    drag.el.style.top  = (e.clientY - drag.dy) + 'px';
+    updateDropTarget(e.clientX, e.clientY);
+  }
+}
+function onUp(){
+  if (!drag) return;
+  drag.el.removeEventListener('pointermove', onMove);
+  drag.el.removeEventListener('pointerup', onUp);
+  drag.el.removeEventListener('pointercancel', onUp);
+
+  const destList = drag.placeholder.parentElement || drag.srcList;
+  destList.insertBefore(drag.el, drag.placeholder);
+  drag.el.style.position=''; drag.el.style.left=''; drag.el.style.top='';
+  drag.el.style.width=''; drag.el.style.zIndex=''; drag.el.style.pointerEvents='';
+  drag.el.classList.remove('dragging');
+
+  const col = destList.closest('.column');
+  const colName = col.dataset.colName;
+  const cardsInCol = Array.from(destList.querySelectorAll('.card')).map(el=>el.dataset.id);
+  let i=0;
+  for (const id of cardsInCol){
+    const c = state.cards.find(x=>x.id===id);
+    c.status = colName;
+    c.order = i++;
+  }
+  saveState(state);
+  cleanupDropHints();
+  drag.placeholder.remove();
+  drag=null;
+  render(); // keep counts & chip states correct
+}
+function updateDropTarget(x,y){
+  cleanupDropHints();
+  const el = document.elementFromPoint(x, y);
+  const list = el?.closest?.('.cardlist') || el?.closest?.('.column')?.querySelector('.cardlist');
+  if (!list) return;
+  list.classList.add('drop-hint');
+  const cards = [...list.querySelectorAll('.card:not(.dragging)')];
+  if (cards.length === 0){ list.appendChild(drag.placeholder); return; }
+  let best=null, bestDist=Infinity;
+  for (const c of cards){
+    const r = c.getBoundingClientRect();
+    const midY = r.top + r.height/2;
+    const d = Math.abs(y - midY);
+    if (d < bestDist){ bestDist=d; best=c; }
+  }
+  const r = best.getBoundingClientRect();
+  if (y < r.top + r.height/2) list.insertBefore(drag.placeholder, best);
+  else list.insertBefore(drag.placeholder, best.nextSibling);
+}
+function cleanupDropHints(){ $$('.cardlist.drop-hint').forEach(n=>n.classList.remove('drop-hint')); }
+
+/* ========= Actions ========= */
+$('#csvInput').addEventListener('change', async (e)=>{
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const text = await file.text();
+  importCSVText(text);
+  e.target.value = '';
+});
+$('#downloadTemplateBtn').addEventListener('click', downloadTemplate);
+$('#exportCsvBtn').addEventListener('click', exportCSV);
+$('#exportJsonBtn').addEventListener('click', exportJSON);
+$('#resetBtn').addEventListener('click', ()=>{
+  if (!confirm('Clear local board and reset to empty columns?')) return;
+  state = { columns: structuredClone(DEFAULT_COLUMNS), cards: [] };
+  saveState(state);
+  selectedTags.clear();
+  render();
+});
+
+/* ========= First render ========= */
+if (!state.columns?.length){ state.columns = structuredClone(DEFAULT_COLUMNS); }
+render();
+</script>
+</body>
+</html>
