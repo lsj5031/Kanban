@@ -505,14 +505,14 @@ function renderCard(card){
   editBtn.innerHTML = '✏️';
   editBtn.setAttribute('title', 'Edit task');
   editBtn.setAttribute('aria-label', `Edit task: ${card.title}`);
-  editBtn.addEventListener('click', function() { openTaskModal(this.closest('.card').dataset.id); });
+  editBtn.addEventListener('click', function(e) { openTaskModal(e.target.closest('.card').dataset.id); });
   
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'card-action-btn';
   deleteBtn.innerHTML = '🗑️';
   deleteBtn.setAttribute('title', 'Delete task');
   deleteBtn.setAttribute('aria-label', `Delete task: ${card.title}`);
-  deleteBtn.addEventListener('click', function() { openDeleteDialog(this.closest('.card').dataset.id); });
+  deleteBtn.addEventListener('click', function(e) { openDeleteDialog(e.target.closest('.card').dataset.id); });
   
   actions.append(editBtn, deleteBtn);
 
@@ -700,6 +700,15 @@ function deleteTask(taskId){
   const deletedTask = state.cards[taskIndex];
   state.cards.splice(taskIndex, 1);
   
+  // Clean up drag state if deleting the currently dragged card
+  if (drag && drag.id === taskId) {
+    cleanupDropHints();
+    if (drag.placeholder && drag.placeholder.parentNode) {
+      drag.placeholder.remove();
+    }
+    drag = null;
+  }
+  
   // Reorder remaining tasks in the same column
   if (deletedTask) {
     const columnTasks = state.cards.filter(c => c.status === deletedTask.status);
@@ -731,8 +740,16 @@ function openTaskModal(taskId = null, columnName = null){
   
   if (taskId) {
     // Edit mode
+    if (!taskId) {
+      console.error('No task ID provided for editing');
+      return;
+    }
+    
     const task = state.cards.find(c => c.id === taskId);
-    if (!task) return;
+    if (!task) {
+      console.error('Task not found:', taskId);
+      return;
+    }
     
     title.textContent = 'Edit Task';
     $('#taskTitle').value = task.title || '';
@@ -761,8 +778,16 @@ function closeTaskModal(){
 }
 
 function openDeleteDialog(taskId){
+  if (!taskId) {
+    console.error('No task ID provided for deletion');
+    return;
+  }
+  
   const task = state.cards.find(c => c.id === taskId);
-  if (!task) return;
+  if (!task) {
+    console.error('Task not found:', taskId);
+    return;
+  }
   
   currentDeletingTask = taskId;
   $('#deleteTitle').textContent = `Delete "${task.title}"?`;
@@ -779,6 +804,8 @@ let drag = null;
 function attachDnD(cardEl){
   cardEl.addEventListener('pointerdown', (e)=>{
     if (e.button !== 0) return;
+    // Don't prevent default if clicking on action buttons or interactive elements
+    if (e.target.closest('.card-actions, .tagchip, button')) return;
     e.preventDefault();
     startDrag(cardEl, e);
   }, {passive:false});
@@ -825,6 +852,26 @@ function onMove(e){
 }
 function onUp(){
   if (!drag) return;
+  
+  // Check if the dragged card still exists in state
+  const draggedCard = state.cards.find(x=>x.id===drag.id);
+  if (!draggedCard) {
+    // Card was deleted during drag, clean up and exit
+    drag.el.removeEventListener('pointermove', onMove);
+    drag.el.removeEventListener('pointerup', onUp);
+    drag.el.removeEventListener('pointercancel', onUp);
+    drag.el.style.position=''; drag.el.style.left=''; drag.el.style.top='';
+    drag.el.style.width=''; drag.el.style.zIndex=''; drag.el.style.pointerEvents='';
+    drag.el.classList.remove('dragging');
+    cleanupDropHints();
+    if (drag.placeholder.parentNode) {
+      drag.placeholder.remove();
+    }
+    drag.el.remove();
+    drag = null;
+    return;
+  }
+  
   drag.el.removeEventListener('pointermove', onMove);
   drag.el.removeEventListener('pointerup', onUp);
   drag.el.removeEventListener('pointercancel', onUp);
@@ -965,7 +1012,9 @@ $('#deleteDialog').addEventListener('click', (e) => {
 
 $('#confirmDelete').addEventListener('click', () => {
   if (currentDeletingTask) {
-    deleteTask(currentDeletingTask);
+    const taskIdToDelete = currentDeletingTask;
+    currentDeletingTask = null; // Prevent double-clicks
+    deleteTask(taskIdToDelete);
     closeDeleteDialog();
   }
 });
