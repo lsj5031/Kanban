@@ -213,10 +213,14 @@ test.describe('Task CRUD Operations', () => {
 	test('should create tasks in different columns', async ({ page }) => {
 		await createTask(page, { title: 'Todo Task', status: 'To Do' });
 		await createTask(page, { title: 'In Progress Task', status: 'In Progress' });
+		await createTask(page, { title: 'Review Task', status: 'Review' });
+		await createTask(page, { title: 'Blocked Task', status: 'Blocked' });
 		await createTask(page, { title: 'Done Task', status: 'Done' });
 
 		expect(await getTaskCountInColumn(page, 'To Do')).toBe(1);
 		expect(await getTaskCountInColumn(page, 'In Progress')).toBe(1);
+		expect(await getTaskCountInColumn(page, 'Review')).toBe(1);
+		expect(await getTaskCountInColumn(page, 'Blocked')).toBe(1);
 		expect(await getTaskCountInColumn(page, 'Done')).toBe(1);
 	});
 

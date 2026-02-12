@@ -5,7 +5,7 @@ export interface CreateTaskOptions {
 	description?: string;
 	priority?: 'Low' | 'Medium' | 'High';
 	tags?: string;
-	status?: 'To Do' | 'In Progress' | 'Done';
+	status?: 'To Do' | 'In Progress' | 'Review' | 'Blocked' | 'Done';
 }
 
 export async function createTask(page: Page, options: CreateTaskOptions) {

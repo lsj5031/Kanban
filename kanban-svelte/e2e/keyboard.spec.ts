@@ -21,31 +21,37 @@ test.describe('Modal Keyboard Behavior', () => {
 });
 
 test.describe('Accessibility', () => {
-	test.beforeEach(async ({ page }) => {
-		await page.goto('/');
-		await clearAllTasks(page);
-	});
-
 	test('should have proper heading structure', async ({ page }) => {
-		// Main heading should be h1
-		const h1 = page.locator('h1');
-		await expect(h1).toBeVisible();
+		await page.goto('/');
+		await page.waitForLoadState('domcontentloaded');
 
-		// Column headings should be h2
-		const h2s = page.locator('h2');
-		expect(await h2s.count()).toBe(3);
+		// Wait for first column to be visible
+		await expect(page.locator('h2:has-text("To Do")')).toBeVisible({ timeout: 15000 });
+
+		// Logo should be visible
+		await expect(page.locator('img[alt="Kanban Mono"]')).toBeVisible();
+
+		// Count column headings
+		const h2Count = await page.locator('h2').count();
+		expect(h2Count).toBe(5);
 	});
 
 	test('should have accessible buttons', async ({ page }) => {
-		// Wait for columns to be visible
-		await expect(page.locator('h2:has-text("To Do")')).toBeVisible();
+		await page.goto('/');
+		await page.waitForLoadState('domcontentloaded');
 
-		// Add task buttons should exist
+		// Wait for columns to be visible
+		await expect(page.locator('h2:has-text("To Do")')).toBeVisible({ timeout: 10000 });
+
+		// Add task buttons should exist (5 columns)
 		const addButtons = page.locator('button:has-text("Add Task")');
-		expect(await addButtons.count()).toBe(3);
+		expect(await addButtons.count()).toBe(5);
 	});
 
 	test('should focus trap in modal', async ({ page }) => {
+		await page.goto('/');
+		await clearAllTasks(page);
+
 		// Open add task modal
 		await page.click('button[aria-label*="Add task"]');
 		await expect(page.locator('.modal')).toBeVisible();

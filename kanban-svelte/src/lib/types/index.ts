@@ -17,4 +17,4 @@ export interface Column {
 
 export type Board = Column[];
 
-export const DEFAULT_COLUMNS: string[] = ['To Do', 'In Progress', 'Done'];
+export const DEFAULT_COLUMNS: string[] = ['To Do', 'In Progress', 'Review', 'Blocked', 'Done'];

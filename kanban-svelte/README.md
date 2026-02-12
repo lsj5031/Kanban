@@ -87,7 +87,7 @@ Upload a JSON file with the following structure:
 
 - `title` (required): Task name
 - `description`: Task details
-- `status`: Column name (default: "To Do")
+- `status`: Column name (default: "To Do", options: "To Do", "In Progress", "Review", "Blocked", "Done")
 - `priority`: "Low", "Medium", "High", or empty
 - `dueDate`: ISO date format (YYYY-MM-DD)
 - `tags`: Array of tag strings

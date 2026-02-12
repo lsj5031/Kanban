@@ -74,16 +74,7 @@
 <header class="header">
 	<div class="header-inner">
 		<div class="header-brand">
-			<div class="logo-circle">
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<rect x="3" y="3" width="5" height="18" rx="1"></rect>
-					<rect x="10" y="3" width="5" height="12" rx="1"></rect>
-					<rect x="17" y="3" width="5" height="8" rx="1"></rect>
-				</svg>
-			</div>
-			<h1 class="display-text">
-				Kanban
-			</h1>
+			<img src="/logo.png" alt="Kanban Mono" class="logo-img" />
 		</div>
 
 		<div class="header-controls">
@@ -162,24 +153,10 @@
 		gap: 0.875rem;
 	}
 
-	.logo-circle {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 2.5rem;
+	.logo-img {
 		height: 2.5rem;
-		background: var(--color-primary);
-		border-radius: 50%;
-		color: var(--color-primary-foreground);
-	}
-
-	.display-text {
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: var(--color-foreground);
-		letter-spacing: -0.02em;
+		width: auto;
+		border-radius: 0.5rem;
 	}
 
 	.header-controls {

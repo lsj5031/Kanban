@@ -7,14 +7,16 @@ test.describe('Board Display', () => {
 		await clearAllTasks(page);
 	});
 
-	test('should display three default columns', async ({ page }) => {
+	test('should display default columns', async ({ page }) => {
 		await expect(page.locator('h2:has-text("To Do")')).toBeVisible();
 		await expect(page.locator('h2:has-text("In Progress")')).toBeVisible();
+		await expect(page.locator('h2:has-text("Review")')).toBeVisible();
+		await expect(page.locator('h2:has-text("Blocked")')).toBeVisible();
 		await expect(page.locator('h2:has-text("Done")')).toBeVisible();
 	});
 
 	test('should show empty state for empty columns', async ({ page }) => {
-		await expect(page.locator('text=No tasks')).toHaveCount(3);
+		await expect(page.locator('text=No tasks')).toHaveCount(5);
 	});
 
 	test('should show correct task count in column headers', async ({ page }) => {
