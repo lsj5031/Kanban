@@ -3,14 +3,23 @@
 	import { board } from '$lib/stores/board.svelte';
 
 	function handleCancel() {
-		ui.closeDeleteDialog();
+		ui.closeArchiveDialog();
 	}
 
 	function handleConfirm() {
-		if (ui.deleteState.task) {
-			board.deleteTask(ui.deleteState.task.id);
-		}
-		ui.closeDeleteDialog();
+		const archived = board.archiveDoneTasks();
+		ui.closeArchiveDialog();
+		// Download archived tasks as JSON
+		const json = JSON.stringify({ archived: archived, archivedAt: new Date().toISOString() }, null, 2);
+		const blob = new Blob([json], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `archived-tasks-${new Date().toISOString().split('T')[0]}.json`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -28,13 +37,13 @@
 	// Focus overlay when modal opens for keyboard events
 	let overlayElement: HTMLDivElement;
 	$effect(() => {
-		if (ui.deleteState.open && overlayElement) {
+		if (ui.archiveState.open && overlayElement) {
 			overlayElement.focus();
 		}
 	});
 </script>
 
-{#if ui.deleteState.open}
+{#if ui.archiveState.open}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="modal-overlay"
@@ -44,17 +53,17 @@
 		role="presentation"
 		bind:this={overlayElement}
 	>
-		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="archive-title">
 			<div class="modal-header">
-				<h3 id="delete-title">Confirm Delete</h3>
+				<h3 id="archive-title">Archive Completed Tasks</h3>
 			</div>
 			<div class="modal-body">
-				<p>Are you sure you want to permanently delete this task? This cannot be undone.</p>
-				<h4 class="task-title">{ui.deleteState.task?.title}</h4>
+				<p>Archive all <strong>{ui.archiveState.taskCount}</strong> completed tasks?</p>
+				<p class="hint">Tasks will be downloaded as a JSON file and removed from your board.</p>
 			</div>
 			<div class="modal-footer">
 				<button class="btn ghost" onclick={handleCancel}>Cancel</button>
-				<button class="btn destructive" onclick={handleConfirm}>Delete Task</button>
+				<button class="btn primary" onclick={handleConfirm}>Archive All</button>
 			</div>
 		</div>
 	</div>
@@ -106,23 +115,21 @@
 	}
 
 	.modal-body p {
-		margin: 0 0 1.5rem 0;
+		margin: 0 0 1rem 0;
 		line-height: 1.6;
-		color: var(--color-muted-foreground);
+		color: var(--color-foreground);
 		font-family: var(--font-body);
 		font-size: 0.9375rem;
 	}
 
-	.task-title {
-		margin: 0;
+	.modal-body p strong {
+		color: var(--color-primary);
+	}
+
+	.hint {
+		font-size: 0.875rem;
+		color: var(--color-muted-foreground);
 		font-style: italic;
-		font-family: var(--font-display);
-		font-size: 1.125rem;
-		color: var(--color-foreground);
-		padding: 1rem;
-		background: var(--color-muted);
-		border-radius: 1rem;
-		border-left: 3px solid var(--color-destructive);
 	}
 
 	.modal-footer {
@@ -164,21 +171,21 @@
 		transform: scale(0.98);
 	}
 
-	.btn.destructive {
-		background: var(--color-destructive);
-		color: white;
-		border-color: var(--color-destructive);
-		box-shadow: 0 4px 20px -2px rgba(168, 84, 72, 0.3);
+	.btn.primary {
+		background: var(--color-secondary);
+		color: var(--color-secondary-foreground);
+		border-color: var(--color-secondary);
+		box-shadow: 0 4px 20px -2px rgba(144, 142, 70, 0.3);
 	}
 
-	.btn.destructive:hover {
-		background: #8f473d;
-		border-color: #8f473d;
+	.btn.primary:hover {
+		background: #7a7840;
+		border-color: #7a7840;
 		transform: scale(1.05);
-		box-shadow: 0 6px 24px -4px rgba(168, 84, 72, 0.4);
+		box-shadow: 0 6px 24px -4px rgba(144, 142, 70, 0.4);
 	}
 
-	.btn.destructive:active {
+	.btn.primary:active {
 		transform: scale(0.95);
 	}
 </style>

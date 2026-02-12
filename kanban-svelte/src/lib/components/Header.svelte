@@ -67,18 +67,22 @@
 	}
 
 	function handleReset() {
-		if (confirm('Are you sure you want to reset the board? This will delete all tasks.')) {
-			board.reset();
-			ui.clearHighlightedTags();
-		}
+		ui.openResetDialog();
 	}
 </script>
 
 <header class="header">
-	<div class="header-top">
+	<div class="header-inner">
 		<div class="header-brand">
+			<div class="logo-circle">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="3" y="3" width="5" height="18" rx="1"></rect>
+					<rect x="10" y="3" width="5" height="12" rx="1"></rect>
+					<rect x="17" y="3" width="5" height="8" rx="1"></rect>
+				</svg>
+			</div>
 			<h1 class="display-text">
-				KANBAN<span style="font-size: 0.5em; vertical-align: super; font-style: italic">Mono</span>
+				Kanban
 			</h1>
 		</div>
 
@@ -99,11 +103,31 @@
 			{/if}
 
 			<div class="control-row">
-				<label class="btn" for="jsonInput">Import</label>
+				<label class="btn btn-outline" for="jsonInput">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+						<polyline points="17 8 12 3 7 8"></polyline>
+						<line x1="12" y1="3" x2="12" y2="15"></line>
+					</svg>
+					Import
+				</label>
 				<input bind:this={jsonInput} id="jsonInput" type="file" accept=".json,application/json" onchange={handleJSONUpload} hidden />
 
-				<button class="btn" onclick={exportJSON}>Export</button>
-				<button class="btn ghost" onclick={handleReset}>Reset</button>
+				<button class="btn btn-outline" onclick={exportJSON}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+						<polyline points="7 10 12 15 17 10"></polyline>
+						<line x1="12" y1="15" x2="12" y2="3"></line>
+					</svg>
+					Export
+				</button>
+				<button class="btn btn-ghost" onclick={handleReset}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="1 4 1 10 7 10"></polyline>
+						<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+					</svg>
+					Reset
+				</button>
 			</div>
 		</div>
 	</div>
@@ -111,28 +135,48 @@
 
 <style>
 	.header {
-		background: var(--color-background);
-		border-bottom: 1px solid var(--color-border);
+		position: sticky;
+		top: 1rem;
+		z-index: 100;
+		margin: 1rem 2rem;
 	}
 
-	.header-top {
+	.header-inner {
 		display: flex;
 		justify-content: space-between;
-		align-items: flex-start;
+		align-items: center;
 		gap: 2rem;
-		padding: 2rem;
+		padding: 0.75rem 1.5rem;
+		background: rgba(255, 255, 255, 0.7);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border: 1px solid rgba(222, 216, 207, 0.5);
+		border-radius: 9999px;
+		box-shadow: var(--shadow-soft);
 		flex-wrap: wrap;
 	}
 
 	.header-brand {
-		flex: 1;
-		min-width: 200px;
+		display: flex;
+		align-items: center;
+		gap: 0.875rem;
+	}
+
+	.logo-circle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.5rem;
+		height: 2.5rem;
+		background: var(--color-primary);
+		border-radius: 50%;
+		color: var(--color-primary-foreground);
 	}
 
 	.display-text {
 		margin: 0;
 		font-family: var(--font-display);
-		font-size: clamp(2rem, 4vw, 3.5rem);
+		font-size: 1.5rem;
 		font-weight: 700;
 		color: var(--color-foreground);
 		letter-spacing: -0.02em;
@@ -141,42 +185,62 @@
 	.header-controls {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		align-items: flex-end;
+		gap: 0.5rem;
 	}
 
 	.control-row {
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
+		justify-content: flex-end;
 	}
 
 	.btn {
-		padding: 0.5rem 1rem;
-		font-family: var(--font-mono);
-		font-size: 0.8125rem;
-		background: var(--color-foreground);
-		color: var(--color-background);
-		border: 1px solid var(--color-foreground);
-		border-radius: 0.25rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.625rem 1.25rem;
+		font-family: var(--font-body);
+		font-size: 0.875rem;
+		font-weight: 600;
+		border-radius: 9999px;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all 0.3s ease;
 		white-space: nowrap;
+		border: 2px solid transparent;
 	}
 
-	.btn:hover {
+	.btn-outline {
 		background: transparent;
-		color: var(--color-foreground);
+		color: var(--color-secondary);
+		border-color: var(--color-secondary);
 	}
 
-	.btn.ghost {
+	.btn-outline:hover {
+		background: var(--color-secondary);
+		color: var(--color-secondary-foreground);
+		transform: scale(1.05);
+		box-shadow: 0 6px 24px -4px rgba(193, 140, 93, 0.25);
+	}
+
+	.btn-outline:active {
+		transform: scale(0.95);
+	}
+
+	.btn-ghost {
 		background: transparent;
-		color: var(--color-foreground);
-		border-color: var(--color-border);
+		color: var(--color-primary);
+		border-color: transparent;
 	}
 
-	.btn.ghost:hover {
-		background: var(--color-card);
-		border-color: var(--color-border-heavy);
+	.btn-ghost:hover {
+		background: rgba(93, 112, 82, 0.1);
+		transform: scale(1.05);
+	}
+
+	.btn-ghost:active {
+		transform: scale(0.95);
 	}
 
 	.import-progress {
@@ -186,9 +250,10 @@
 		padding: 0.5rem 1rem;
 		background: var(--color-card);
 		border: 1px solid var(--color-border);
-		border-radius: 0.25rem;
-		font-family: var(--font-mono);
+		border-radius: 9999px;
+		font-family: var(--font-body);
 		font-size: 0.8125rem;
+		box-shadow: var(--shadow-card);
 	}
 
 	.progress-label {
@@ -199,38 +264,51 @@
 	.progress-bar {
 		flex: 1;
 		height: 6px;
-		min-width: 100px;
-		background: var(--color-border);
-		border-radius: 3px;
+		min-width: 80px;
+		background: var(--color-muted);
+		border-radius: 9999px;
 		overflow: hidden;
 	}
 
 	.progress-fill {
 		height: 100%;
-		background: var(--color-foreground);
-		transition: width 0.15s ease;
+		background: var(--color-primary);
+		transition: width 0.3s ease;
+		border-radius: 9999px;
 	}
 
 	.progress-text {
-		color: var(--color-foreground);
-		opacity: 0.7;
+		color: var(--color-muted-foreground);
 		white-space: nowrap;
-		min-width: 80px;
+		min-width: 70px;
 		text-align: right;
 	}
 
 	@media (max-width: 768px) {
-		.header-top {
+		.header {
+			margin: 0.75rem 1rem;
+		}
+
+		.header-inner {
 			flex-direction: column;
-			gap: 1.5rem;
+			gap: 1rem;
+			padding: 1rem;
+			border-radius: 1.5rem;
 		}
 
 		.header-controls {
 			width: 100%;
+			align-items: center;
 		}
 
 		.control-row {
 			justify-content: center;
+			width: 100%;
+		}
+
+		.btn {
+			padding: 0.5rem 1rem;
+			font-size: 0.8125rem;
 		}
 	}
 </style>

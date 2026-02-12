@@ -4,6 +4,8 @@
 	import Footer from '$lib/components/Footer.svelte';
 	import TaskModal from '$lib/components/TaskModal.svelte';
 	import DeleteDialog from '$lib/components/DeleteDialog.svelte';
+	import ArchiveDialog from '$lib/components/ArchiveDialog.svelte';
+	import ResetDialog from '$lib/components/ResetDialog.svelte';
 	import { ui } from '$lib/stores/ui.svelte';
 	import { setupKeyboardShortcuts } from '$lib/utils/keyboard';
 
@@ -34,6 +36,8 @@
 	<Footer />
 	<TaskModal />
 	<DeleteDialog />
+	<ArchiveDialog />
+	<ResetDialog />
 </div>
 
 <style>

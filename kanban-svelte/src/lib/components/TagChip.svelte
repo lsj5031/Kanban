@@ -22,25 +22,37 @@
 
 <style>
 	.tag-chip {
-		padding: 0.125rem 0.5rem;
-		font-size: 0.75rem;
-		font-family: var(--font-mono);
-		background: var(--color-card);
-		border: 1px solid var(--color-border);
-		border-radius: 0.25rem;
+		padding: 0.25rem 0.625rem;
+		font-size: 0.6875rem;
+		font-family: var(--font-body);
+		font-weight: 600;
+		background: var(--color-muted);
+		border: 1px solid transparent;
+		border-radius: 9999px;
 		cursor: pointer;
-		transition: all 0.15s ease;
-		color: var(--color-foreground);
+		transition: all 0.3s ease;
+		color: var(--color-muted-foreground);
 	}
 
 	.tag-chip:hover {
-		background: var(--color-card-hover);
-		border-color: var(--color-border-heavy);
+		background: var(--color-primary);
+		color: var(--color-primary-foreground);
+		transform: scale(1.05);
+	}
+
+	.tag-chip:active {
+		transform: scale(0.98);
 	}
 
 	.tag-chip.highlighted {
-		background: var(--color-foreground);
-		color: var(--color-background);
-		border-color: var(--color-foreground);
+		background: var(--color-primary);
+		color: var(--color-primary-foreground);
+		border-color: var(--color-primary);
+		box-shadow: 0 2px 10px -2px rgba(93, 112, 82, 0.3);
+	}
+
+	.tag-chip.highlighted:hover {
+		background: #4d5f44;
+		border-color: #4d5f44;
 	}
 </style>

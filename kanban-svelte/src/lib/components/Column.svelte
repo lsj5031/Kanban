@@ -11,10 +11,14 @@
 
 	// Local state for dnd
 	let items = $state<Task[]>([]);
+	let isDndActive = $state(false);
 
 	// Sync from props - needed for edits and external changes
+	// Skip sync during active drag to prevent interference
 	$effect(() => {
-		items = [...column.tasks];
+		if (!isDndActive) {
+			items = [...column.tasks];
+		}
 	});
 
 	function handleAddTask() {
@@ -22,11 +26,13 @@
 	}
 
 	function handleDndConsider(event: CustomEvent<DndEvent<Task>>) {
+		isDndActive = true;
 		items = event.detail.items as Task[];
 	}
 
 	function handleDndFinalize(event: CustomEvent<DndEvent<Task>>) {
 		items = event.detail.items as Task[];
+		isDndActive = false;
 
 		// Update the store based on the new order
 		items.forEach((item, index) => {
@@ -42,21 +48,7 @@
 
 	function handleArchiveAll() {
 		if (column.tasks.length === 0) return;
-		if (confirm(`Archive all ${column.tasks.length} completed tasks?`)) {
-			const archived = board.archiveDoneTasks();
-			items = [];
-			// Download archived tasks as JSON
-			const json = JSON.stringify({ archived: archived, archivedAt: new Date().toISOString() }, null, 2);
-			const blob = new Blob([json], { type: 'application/json' });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = `archived-tasks-${new Date().toISOString().split('T')[0]}.json`;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
-		}
+		ui.openArchiveDialog(column.tasks.length);
 	}
 </script>
 
@@ -117,44 +109,54 @@
 	.column {
 		display: flex;
 		flex-direction: column;
-		background: var(--color-background);
-		border-radius: 0.5rem;
+		background: var(--color-card);
+		border: 1px solid rgba(222, 216, 207, 0.5);
+		border-radius: 2rem;
 		min-width: 300px;
-		max-width: 350px;
+		max-width: 360px;
 		height: 100%;
+		box-shadow: var(--shadow-card);
+		transition: box-shadow 0.3s ease;
+	}
+
+	.column:hover {
+		box-shadow: var(--shadow-card-hover);
 	}
 
 	.column-header {
-		padding: 1rem 1rem 0.75rem;
-		border-bottom: 1px solid var(--color-border);
+		padding: 1.25rem 1.25rem 1rem;
+		border-bottom: 1px solid rgba(222, 216, 207, 0.4);
 	}
 
 	.column-title {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
+		gap: 0.75rem;
+		margin-bottom: 0.875rem;
 	}
 
 	.column-title h2 {
 		margin: 0;
 		font-family: var(--font-display);
 		font-size: 1.25rem;
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-foreground);
+		letter-spacing: -0.01em;
 	}
 
 	.task-count {
-		padding: 0.125rem 0.5rem;
-		font-family: var(--font-mono);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.25rem 0.75rem;
+		font-family: var(--font-body);
 		font-size: 0.75rem;
-		background: var(--color-card);
-		color: var(--color-accent);
-		border: 1px solid var(--color-border);
-		border-radius: 1rem;
-		min-width: 1.5rem;
-		text-align: center;
+		font-weight: 600;
+		background: var(--color-muted);
+		color: var(--color-muted-foreground);
+		border-radius: 9999px;
+		min-width: 2rem;
 	}
 
 	.column-actions {
@@ -165,15 +167,16 @@
 
 	.archive-btn {
 		flex: 1;
-		padding: 0.5rem;
-		font-family: var(--font-mono);
+		padding: 0.5rem 0.75rem;
+		font-family: var(--font-body);
 		font-size: 0.75rem;
+		font-weight: 600;
 		background: transparent;
-		color: var(--color-accent);
-		border: 1px solid var(--color-border);
-		border-radius: 0.375rem;
+		color: var(--color-secondary);
+		border: 1px solid var(--color-secondary);
+		border-radius: 9999px;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all 0.3s ease;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -181,47 +184,59 @@
 	}
 
 	.archive-btn:hover {
-		background: var(--color-card);
-		border-color: var(--color-foreground);
-		color: var(--color-foreground);
+		background: var(--color-secondary);
+		color: var(--color-secondary-foreground);
+		transform: scale(1.02);
+	}
+
+	.archive-btn:active {
+		transform: scale(0.98);
 	}
 
 	.add-task-btn {
 		width: 100%;
-		padding: 0.5rem;
-		font-family: var(--font-mono);
-		font-size: 0.75rem;
+		padding: 0.625rem 0.75rem;
+		font-family: var(--font-body);
+		font-size: 0.8125rem;
+		font-weight: 600;
 		background: transparent;
-		color: var(--color-accent);
-		border: 1px dashed var(--color-border);
-		border-radius: 0.375rem;
+		color: var(--color-primary);
+		border: 2px dashed var(--color-border);
+		border-radius: 9999px;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all 0.3s ease;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.375rem;
+		gap: 0.5rem;
 	}
 
 	.add-task-btn:hover {
-		background: var(--color-card);
-		border-color: var(--color-accent);
-		color: var(--color-foreground);
+		background: rgba(93, 112, 82, 0.05);
+		border-color: var(--color-primary);
+		border-style: solid;
+		color: var(--color-primary);
+		transform: scale(1.02);
+	}
+
+	.add-task-btn:active {
+		transform: scale(0.98);
 	}
 
 	.column-tasks {
 		padding: 1rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.875rem;
 		flex: 1;
 		overflow-y: auto;
 		min-height: 200px;
 	}
 
 	:global(.drop-target) {
-		outline: 2px dashed var(--color-accent);
+		outline: 2px dashed var(--color-primary);
 		outline-offset: -8px;
+		border-radius: 1rem;
 	}
 
 	.task-dnd {
@@ -235,14 +250,21 @@
 
 	.empty-state {
 		text-align: center;
-		padding: 2rem 1rem;
-		color: var(--color-accent);
+		padding: 2.5rem 1rem;
+		color: var(--color-muted-foreground);
 		font-family: var(--font-body);
 		font-style: italic;
-		font-size: 0.875rem;
+		font-size: 0.9375rem;
 	}
 
 	.empty-state p {
 		margin: 0;
+	}
+
+	@media (max-width: 768px) {
+		.column {
+			min-width: 280px;
+			max-width: 100%;
+		}
 	}
 </style>

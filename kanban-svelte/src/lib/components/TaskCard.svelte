@@ -103,19 +103,21 @@
 
 <style>
 	.task-card {
-		background: var(--color-card);
-		border: 1px solid var(--color-border);
-		border-radius: 0.375rem;
-		transition: all 0.15s ease;
+		background: var(--color-background);
+		border: 1px solid rgba(222, 216, 207, 0.5);
+		border-radius: 1rem;
+		transition: all 0.3s ease;
+		box-shadow: var(--shadow-card);
 	}
 
 	.task-card:hover {
-		background: var(--color-card-hover);
-		border-color: var(--color-border-heavy);
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-card-hover);
+		border-color: rgba(222, 216, 207, 0.7);
 	}
 
 	.task-card.dimmed {
-		opacity: 0.3;
+		opacity: 0.35;
 	}
 
 	.task-card-inner {
@@ -124,6 +126,8 @@
 
 	.task-card-inner.priority-border {
 		border-left: 3px solid;
+		border-top-left-radius: 1rem;
+		border-bottom-left-radius: 1rem;
 	}
 
 	.task-card-inner.priority-border.high {
@@ -143,15 +147,15 @@
 		justify-content: space-between;
 		align-items: flex-start;
 		gap: 0.5rem;
-		margin-bottom: 0.75rem;
+		margin-bottom: 0.625rem;
 	}
 
 	.task-title {
 		margin: 0;
 		font-family: var(--font-body);
-		font-size: 1rem;
-		font-weight: 400;
-		line-height: 1.4;
+		font-size: 0.9375rem;
+		font-weight: 600;
+		line-height: 1.45;
 		color: var(--color-foreground);
 		flex: 1;
 		word-break: break-word;
@@ -159,32 +163,34 @@
 
 	.task-actions {
 		display: flex;
-		gap: 0.25rem;
+		gap: 0.125rem;
 		flex-shrink: 0;
 	}
 
 	.action-btn {
-		padding: 0.25rem;
+		padding: 0.375rem;
 		background: transparent;
 		border: none;
+		border-radius: 50%;
 		cursor: pointer;
-		color: var(--color-accent);
-		transition: color 0.15s ease;
+		color: var(--color-muted-foreground);
+		transition: all 0.2s ease;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
 	.action-btn:hover {
-		color: var(--color-foreground);
+		color: var(--color-primary);
+		background: rgba(93, 112, 82, 0.1);
 	}
 
 	.task-description {
-		margin: 0 0 0.75rem 0;
+		margin: 0 0 0.625rem 0;
 		font-family: var(--font-body);
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		line-height: 1.5;
-		color: var(--color-accent);
+		color: var(--color-muted-foreground);
 		line-clamp: 3;
 		display: -webkit-box;
 		-webkit-line-clamp: 3;
@@ -196,46 +202,48 @@
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
-		margin-bottom: 0.75rem;
+		margin-bottom: 0.625rem;
 	}
 
 	.priority-badge {
-		padding: 0.125rem 0.5rem;
-		font-family: var(--font-mono);
+		padding: 0.1875rem 0.625rem;
+		font-family: var(--font-body);
 		font-size: 0.6875rem;
-		font-weight: 500;
+		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		border-radius: 0.25rem;
+		letter-spacing: 0.03em;
+		border-radius: 9999px;
 	}
 
 	.priority-badge.high {
-		background: rgba(239, 68, 68, 0.15);
+		background: rgba(168, 84, 72, 0.12);
 		color: var(--color-priority-high);
 	}
 
 	.priority-badge.medium {
-		background: rgba(234, 179, 8, 0.15);
+		background: rgba(193, 140, 93, 0.15);
 		color: var(--color-priority-medium);
 	}
 
 	.priority-badge.low {
-		background: rgba(34, 197, 94, 0.15);
+		background: rgba(93, 112, 82, 0.12);
 		color: var(--color-priority-low);
 	}
 
 	.due-date {
-		padding: 0.125rem 0.5rem;
-		font-family: var(--font-mono);
+		padding: 0.1875rem 0.625rem;
+		font-family: var(--font-body);
 		font-size: 0.6875rem;
-		background: var(--color-background);
-		color: var(--color-accent);
-		border-radius: 0.25rem;
+		font-weight: 500;
+		background: var(--color-muted);
+		color: var(--color-muted-foreground);
+		border-radius: 9999px;
 	}
 
 	.due-date.overdue {
+		background: rgba(168, 84, 72, 0.1);
 		color: var(--color-priority-high);
-		font-weight: 500;
+		font-weight: 600;
 	}
 
 	.task-tags {

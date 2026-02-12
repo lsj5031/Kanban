@@ -17,7 +17,7 @@
 			description = ui.modalState.task.description;
 			priority = ui.modalState.task.priority;
 			dueDate = ui.modalState.task.dueDate;
-			tags = ui.modalState.task.tags.join('; ');
+			tags = ui.modalState.task.tags.join(';');
 		} else if (ui.modalState.open && ui.modalState.mode === 'add') {
 			title = '';
 			description = '';
@@ -66,10 +66,32 @@
 			handleClose();
 		}
 	}
+
+	function handleOverlayClick(event: MouseEvent) {
+		if (event.target === event.currentTarget) {
+			handleClose();
+		}
+	}
+
+	// Focus overlay when modal opens for keyboard events
+	let overlayElement: HTMLDivElement;
+	$effect(() => {
+		if (ui.modalState.open && overlayElement) {
+			overlayElement.focus();
+		}
+	});
 </script>
 
 {#if ui.modalState.open}
-	<div class="modal-overlay" onkeydown={handleKeydown} role="presentation">
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		class="modal-overlay"
+		onkeydown={handleKeydown}
+		onclick={handleOverlayClick}
+		tabindex="-1"
+		role="presentation"
+		bind:this={overlayElement}
+	>
 		<div class="modal" role="dialog" aria-labelledby="modal-title" aria-modal="true">
 			<div class="modal-header">
 				<h3 id="modal-title">{ui.modalState.mode === 'edit' ? 'Edit Task' : 'Add Task'}</h3>
@@ -132,28 +154,29 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background: rgba(0, 0, 0, 0.5);
+		background: rgba(44, 44, 36, 0.4);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 1000;
-		backdrop-filter: blur(2px);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
 	}
 
 	.modal {
-		background: var(--color-background);
-		border: 1px solid var(--color-border);
-		border-radius: 0.5rem;
+		background: var(--color-card);
+		border: 1px solid rgba(222, 216, 207, 0.5);
+		border-radius: 2rem;
 		max-width: 500px;
 		width: 90%;
 		max-height: 90vh;
 		overflow: auto;
-		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+		box-shadow: var(--shadow-float);
 	}
 
 	.modal-header {
-		padding: 1.5rem 1.5rem 1rem;
-		border-bottom: 1px solid var(--color-border);
+		padding: 1.5rem 1.75rem 1rem;
+		border-bottom: 1px solid rgba(222, 216, 207, 0.4);
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -163,27 +186,44 @@
 		margin: 0;
 		font-family: var(--font-display);
 		font-size: 1.5rem;
-		font-weight: 600;
+		font-weight: 700;
+		color: var(--color-foreground);
+		letter-spacing: -0.01em;
 	}
 
 	.close-btn {
+		width: 2.5rem;
+		height: 2.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
 		border: none;
+		border-radius: 50%;
 		font-size: 1.5rem;
 		padding: 0;
 		line-height: 1;
+		cursor: pointer;
+		color: var(--color-muted-foreground);
+		transition: all 0.3s ease;
+	}
+
+	.close-btn:hover {
+		background: var(--color-muted);
+		color: var(--color-foreground);
 	}
 
 	.modal-body {
-		padding: 1.5rem;
+		padding: 1.5rem 1.75rem;
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 1.25rem;
 	}
 
 	.form-row {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 1.5rem;
+		gap: 1rem;
 	}
 
 	.form-group {
@@ -193,90 +233,122 @@
 	}
 
 	.form-group label {
-		font-family: var(--font-mono);
+		font-family: var(--font-body);
 		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--color-accent);
+		font-weight: 600;
+		color: var(--color-muted-foreground);
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.04em;
 	}
 
 	.form-group input,
 	.form-group textarea,
 	.form-group select {
-		padding: 0.625rem 0.75rem;
+		padding: 0.75rem 1rem;
 		font-family: var(--font-body);
 		font-size: 0.9375rem;
-		background: var(--color-background);
+		background: rgba(255, 255, 255, 0.5);
 		color: var(--color-foreground);
 		border: 1px solid var(--color-border);
-		border-radius: 0.25rem;
-		transition: all 0.15s ease;
+		border-radius: 9999px;
+		transition: all 0.3s ease;
+	}
+
+	.form-group input::placeholder,
+	.form-group textarea::placeholder {
+		color: var(--color-muted-foreground);
+		opacity: 0.7;
 	}
 
 	.form-group input:focus,
 	.form-group textarea:focus,
 	.form-group select:focus {
 		outline: none;
-		border-color: var(--color-accent);
-		box-shadow: 0 0 0 2px rgba(115, 115, 115, 0.1);
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px rgba(93, 112, 82, 0.15);
+		background: rgba(255, 255, 255, 0.8);
 	}
 
 	.form-group textarea {
 		resize: vertical;
 		min-height: 100px;
+		border-radius: 1.25rem;
+	}
+
+	.form-group select {
+		cursor: pointer;
+		appearance: none;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2378786C' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 1rem center;
+		padding-right: 2.5rem;
 	}
 
 	.modal-footer {
-		padding: 1rem 1.5rem;
-		border-top: 1px solid var(--color-border);
+		padding: 1rem 1.75rem 1.5rem;
+		border-top: 1px solid rgba(222, 216, 207, 0.4);
 		display: flex;
 		gap: 0.75rem;
 		justify-content: flex-end;
 	}
 
 	.btn {
-		padding: 0.5rem 1rem;
-		font-family: var(--font-mono);
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1.5rem;
+		font-family: var(--font-body);
 		font-size: 0.875rem;
-		background: var(--color-foreground);
-		color: var(--color-background);
-		border: 1px solid var(--color-foreground);
-		border-radius: 0.25rem;
+		font-weight: 600;
+		border-radius: 9999px;
 		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.btn:hover {
-		background: transparent;
-		color: var(--color-foreground);
+		transition: all 0.3s ease;
+		border: 2px solid transparent;
 	}
 
 	.btn.ghost {
 		background: transparent;
-		color: var(--color-foreground);
+		color: var(--color-muted-foreground);
 		border-color: var(--color-border);
 	}
 
 	.btn.ghost:hover {
-		background: var(--color-card);
-		border-color: var(--color-border-heavy);
+		background: var(--color-muted);
+		color: var(--color-foreground);
+		border-color: var(--color-border);
+		transform: scale(1.02);
+	}
+
+	.btn.ghost:active {
+		transform: scale(0.98);
 	}
 
 	.btn.primary {
-		background: var(--color-foreground);
-		color: var(--color-background);
-		font-weight: 500;
+		background: var(--color-primary);
+		color: var(--color-primary-foreground);
+		border-color: var(--color-primary);
+		box-shadow: 0 4px 20px -2px rgba(93, 112, 82, 0.25);
 	}
 
 	.btn.primary:hover {
-		opacity: 0.9;
+		background: #4d5f44;
+		border-color: #4d5f44;
+		transform: scale(1.05);
+		box-shadow: 0 6px 24px -4px rgba(93, 112, 82, 0.35);
+	}
+
+	.btn.primary:active {
+		transform: scale(0.95);
 	}
 
 	@media (max-width: 640px) {
 		.form-row {
 			grid-template-columns: 1fr;
 			gap: 1rem;
+		}
+
+		.modal {
+			border-radius: 1.5rem;
 		}
 	}
 </style>

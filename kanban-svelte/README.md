@@ -1,18 +1,19 @@
 # Kanban Mono (SvelteKit)
 
-A minimalist, monochrome Kanban board built with SvelteKit, Svelte 5 runes, and Tailwind CSS v4. Features CSV/JSON import/export, local storage persistence, and offline functionality.
+A minimalist, monochrome Kanban board built with SvelteKit, Svelte 5 runes, and Tailwind CSS v4. Features JSON import/export, local storage persistence, drag-and-drop, and offline functionality.
 
-![Kanban Mono](https://img.shields.io/badge/Svelte-5-FF3E00) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)
+![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)
 
 ## Features
 
-- **CSV/JSON Import & Export**: Upload your data via CSV or JSON files
-- **Template Download**: Get started quickly with a sample CSV template
+- **JSON Import & Export**: Upload and download your data as JSON files
 - **Task Management**: Create, edit, delete tasks with title, description, priority, due date, and tags
+- **Drag & Drop**: Reorder tasks within columns or move between columns
+- **Archive Completed**: Archive all Done tasks with one click (downloads as JSON)
 - **Tag System**: Click tags to highlight matching tasks across all columns
+- **Modal Dialogs**: All confirmations use accessible modal dialogs
 - **Local Storage**: All data persists in browser localStorage
 - **Offline Ready**: Works completely offline with static build
-- **Dark Mode**: Automatically adapts to system color preference
 - **Keyboard Shortcuts**:
   - `Ctrl/Cmd + N`: Add new task
   - `Escape`: Close modals
@@ -28,7 +29,8 @@ A minimalist, monochrome Kanban board built with SvelteKit, Svelte 5 runes, and 
 - **TypeScript 5** - Type safety
 - **Tailwind CSS 4** - Utility-first CSS with custom theme
 - **Vite 7** - Build tool and dev server
-- **svelte-dnd-action** - Drag and drop (optional, can be added)
+- **svelte-dnd-action** - Drag and drop functionality
+- **Playwright** - End-to-end testing (37 tests)
 
 ## Getting Started
 
@@ -63,14 +65,24 @@ npm run preview
 
 The build output will be in the `build/` directory, which can be deployed to any static hosting service (GitHub Pages, Netlify, Vercel, etc.).
 
-## CSV Format
+## JSON Format
 
-Upload a CSV file with the following headers:
+Upload a JSON file with the following structure:
 
-```csv
-title,description,status,priority,dueDate,tags
-"Design homepage","Create mockups","In Progress","High","2026-02-15","design; frontend"
-"Setup project","Initialize repo","Done","Medium","2026-02-01","setup"
+```json
+{
+  "cards": [
+    {
+      "id": "unique-id",
+      "title": "Design homepage",
+      "description": "Create mockups",
+      "status": "In Progress",
+      "priority": "High",
+      "dueDate": "2026-02-15",
+      "tags": ["design", "frontend"]
+    }
+  ]
+}
 ```
 
 - `title` (required): Task name
@@ -78,7 +90,7 @@ title,description,status,priority,dueDate,tags
 - `status`: Column name (default: "To Do")
 - `priority`: "Low", "Medium", "High", or empty
 - `dueDate`: ISO date format (YYYY-MM-DD)
-- `tags`: Semicolon-separated list
+- `tags`: Array of tag strings
 
 ## Keyboard Shortcuts
 
@@ -97,19 +109,49 @@ title,description,status,priority,dueDate,tags
 npm run check
 ```
 
+### Running Tests
+
+```bash
+# Run all E2E tests
+npx playwright test
+
+# Run tests with UI
+npx playwright test --ui
+```
+
 ### Project Structure
 
 ```
 src/
 ├── lib/
 │   ├── components/      # Svelte components
+│   │   ├── ArchiveDialog.svelte
+│   │   ├── Board.svelte
+│   │   ├── Column.svelte
+│   │   ├── DeleteDialog.svelte
+│   │   ├── Footer.svelte
+│   │   ├── Header.svelte
+│   │   ├── ResetDialog.svelte
+│   │   ├── TagChip.svelte
+│   │   ├── TaskCard.svelte
+│   │   └── TaskModal.svelte
 │   ├── stores/          # Reactive state (Svelte 5 runes)
-│   ├── services/        # Business logic (CSV, JSON, storage)
+│   │   ├── board.svelte.ts
+│   │   └── ui.svelte.ts
+│   ├── services/        # Business logic (JSON, storage)
 │   ├── types/           # TypeScript interfaces
 │   └── utils/           # Helper functions
 ├── routes/              # File-based routing
 ├── app.html             # HTML shell
 └── app.css              # Global styles + Tailwind
+
+e2e/                     # Playwright E2E tests
+├── archive.spec.ts
+├── board.spec.ts
+├── import-export.spec.ts
+├── keyboard.spec.ts
+├── tag-filtering.spec.ts
+└── task-crud.spec.ts
 ```
 
 ## Deployment

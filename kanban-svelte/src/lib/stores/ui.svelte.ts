@@ -18,6 +18,13 @@ export class UIStore {
 	deleteState = $state<{ open: boolean; task?: { id: string; title: string } }>({
 		open: false
 	});
+	archiveState = $state<{ open: boolean; taskCount: number }>({
+		open: false,
+		taskCount: 0
+	});
+	resetState = $state<{ open: boolean }>({
+		open: false
+	});
 	importProgress = $state<{ active: boolean; current: number; total: number; message: string }>({
 		active: false,
 		current: 0,
@@ -78,6 +85,22 @@ export class UIStore {
 
 	closeDeleteDialog(): void {
 		this.deleteState = { open: false };
+	}
+
+	openArchiveDialog(taskCount: number): void {
+		this.archiveState = { open: true, taskCount };
+	}
+
+	closeArchiveDialog(): void {
+		this.archiveState = { open: false, taskCount: 0 };
+	}
+
+	openResetDialog(): void {
+		this.resetState = { open: true };
+	}
+
+	closeResetDialog(): void {
+		this.resetState = { open: false };
 	}
 
 	startImport(total: number, message: string = 'Importing...'): void {

@@ -3,14 +3,13 @@
 	import { board } from '$lib/stores/board.svelte';
 
 	function handleCancel() {
-		ui.closeDeleteDialog();
+		ui.closeResetDialog();
 	}
 
 	function handleConfirm() {
-		if (ui.deleteState.task) {
-			board.deleteTask(ui.deleteState.task.id);
-		}
-		ui.closeDeleteDialog();
+		board.reset();
+		ui.clearHighlightedTags();
+		ui.closeResetDialog();
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -28,13 +27,13 @@
 	// Focus overlay when modal opens for keyboard events
 	let overlayElement: HTMLDivElement;
 	$effect(() => {
-		if (ui.deleteState.open && overlayElement) {
+		if (ui.resetState.open && overlayElement) {
 			overlayElement.focus();
 		}
 	});
 </script>
 
-{#if ui.deleteState.open}
+{#if ui.resetState.open}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="modal-overlay"
@@ -44,17 +43,17 @@
 		role="presentation"
 		bind:this={overlayElement}
 	>
-		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+		<div class="modal" role="dialog" aria-modal="true" aria-labelledby="reset-title">
 			<div class="modal-header">
-				<h3 id="delete-title">Confirm Delete</h3>
+				<h3 id="reset-title">Reset Board</h3>
 			</div>
 			<div class="modal-body">
-				<p>Are you sure you want to permanently delete this task? This cannot be undone.</p>
-				<h4 class="task-title">{ui.deleteState.task?.title}</h4>
+				<p>Are you sure you want to reset the board?</p>
+				<p class="hint">This will permanently delete all tasks. This action cannot be undone.</p>
 			</div>
 			<div class="modal-footer">
 				<button class="btn ghost" onclick={handleCancel}>Cancel</button>
-				<button class="btn destructive" onclick={handleConfirm}>Delete Task</button>
+				<button class="btn destructive" onclick={handleConfirm}>Reset Board</button>
 			</div>
 		</div>
 	</div>
@@ -106,23 +105,17 @@
 	}
 
 	.modal-body p {
-		margin: 0 0 1.5rem 0;
+		margin: 0 0 1rem 0;
 		line-height: 1.6;
-		color: var(--color-muted-foreground);
+		color: var(--color-foreground);
 		font-family: var(--font-body);
 		font-size: 0.9375rem;
 	}
 
-	.task-title {
-		margin: 0;
+	.hint {
+		font-size: 0.875rem;
+		color: var(--color-muted-foreground);
 		font-style: italic;
-		font-family: var(--font-display);
-		font-size: 1.125rem;
-		color: var(--color-foreground);
-		padding: 1rem;
-		background: var(--color-muted);
-		border-radius: 1rem;
-		border-left: 3px solid var(--color-destructive);
 	}
 
 	.modal-footer {
