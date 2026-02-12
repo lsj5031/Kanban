@@ -26,7 +26,7 @@
 	}
 
 	// Focus overlay when modal opens for keyboard events
-	let overlayElement: HTMLDivElement;
+	let overlayElement = $state<HTMLDivElement>();
 	$effect(() => {
 		if (ui.deleteState.open && overlayElement) {
 			overlayElement.focus();
