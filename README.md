@@ -36,7 +36,7 @@ A minimalist, monochrome Kanban board built with SvelteKit, Svelte 5 runes, and 
 
 ### Prerequisites
 
-- Node.js 18+ and npm/yarn/pnpm/bun
+- Node.js 24.22.1+ and npm/yarn/pnpm/bun
 
 ### Installation
 
